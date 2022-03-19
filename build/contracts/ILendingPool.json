@@ -1,0 +1,40 @@
+[
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "receiverAddress",
+        "type": "address"
+      },
+      {
+        "name": "assets",
+        "type": "address[]"
+      },
+      {
+        "name": "amounts",
+        "type": "uint256[]"
+      },
+      {
+        "name": "modes",
+        "type": "uint256[]"
+      },
+      {
+        "name": "onBehalfOf",
+        "type": "address"
+      },
+      {
+        "name": "params",
+        "type": "bytes"
+      },
+      {
+        "name": "referralCode",
+        "type": "uint16"
+      }
+    ],
+    "name": "flashLoan",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
