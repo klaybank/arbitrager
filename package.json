@@ -10,7 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
     "bignumber.js": "^9.0.2",
-    "caver-js": "^1.8.0"
+    "caver-js": "^1.8.0",
+    "hardhat": "^2.9.6"
   }
 }

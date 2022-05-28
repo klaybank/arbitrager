@@ -13,6 +13,12 @@ contract ArbitragerClaimToKlaySwap is IFlashLoanReceiver {
     IClaimSwapRouter CLAIMSWAP;
     mapping(address => mapping(address => bool)) approvedTokens;
 
+    struct OperationData {
+        uint klaySwapEstimateOut;
+        uint claimSwapEstimateOut;
+        uint assetLength;
+    }
+
     function executeOperation(
         address[] calldata assets,
         uint256[] calldata amounts,
@@ -20,27 +26,28 @@ contract ArbitragerClaimToKlaySwap is IFlashLoanReceiver {
         address initiator,
         bytes calldata params
     ) external returns (bool){
-        uint estimateOut;
-        uint estimateOut2;
+        OperationData memory opData;
 
         address[] memory path = new address[](2);
         // tokenA
         path[0] = assets[0];
         // tokenB
         path[1] = bytesToAddress(params);
-        estimateOut = CLAIMSWAP.getAmountsOut(amounts[0], path)[1];
+        opData.claimSwapEstimateOut = CLAIMSWAP.getAmountsOut(amounts[0], path)[1];
 
         IKlaySwapExchange klaySwapPool = IKlaySwapExchange(KLAYSWAP.tokenToPool(path[0], path[1]));
-        estimateOut2 = klaySwapPool.estimatePos(path[1], estimateOut);
+        opData.klaySwapEstimateOut = klaySwapPool.estimatePos(path[1], opData.claimSwapEstimateOut);
 
-        require(estimateOut2 > amounts[0]);
+        require(opData.klaySwapEstimateOut > amounts[0]);
 
         _swapClaimSwap(path[0], path[1], amounts[0]);
-        _swapKlaySwap(path[1], path[0], estimateOut);
-        for (uint i = 0; i < assets.length; i++) {
+        _swapKlaySwap(path[1], path[0], opData.claimSwapEstimateOut);
+
+        opData.assetLength = assets.length;
+    for (uint i = 0; i < opData.assetLength; i++) {
             checkApprove(assets[i], address(LENDING_POOL));
         }
-        IKIP7(assets[i]).transfer(msg.sender, estimateOut2 - amounts[0] - premiums[0]);
+        IKIP7(assets[opData.assetLength - 1]).transfer(msg.sender, opData.klaySwapEstimateOut - amounts[0] - premiums[0]);
         return true;
     }
 
