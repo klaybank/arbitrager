@@ -13,6 +13,12 @@ contract ArbitragerKlaySwapToClaim is IFlashLoanReceiver {
     IClaimSwapRouter CLAIMSWAP;
     mapping(address => mapping(address => bool)) approvedTokens;
 
+    struct OperationData {
+        uint klaySwapEstimateOut;
+        uint claimSwapEstimateOut;
+        uint assetLength;
+    }
+
     function executeOperation(
         address[] calldata assets,
         uint256[] calldata amounts,
@@ -20,8 +26,7 @@ contract ArbitragerKlaySwapToClaim is IFlashLoanReceiver {
         address initiator,
         bytes calldata params
     ) external returns (bool){
-        uint estimateOut;
-        uint estimateOut2;
+        OperationData memory opData;
         address[] memory path = new address[](2);
         // tokenB
         path[0] = bytesToAddress(params);
@@ -29,17 +34,18 @@ contract ArbitragerKlaySwapToClaim is IFlashLoanReceiver {
         path[1] = assets[0];
 
         IKlaySwapExchange klaySwapPool = IKlaySwapExchange(KLAYSWAP.tokenToPool(path[0], path[1]));
-        estimateOut = klaySwapPool.estimatePos(path[1], amounts[0]);
-
-        estimateOut2 = CLAIMSWAP.getAmountsOut(estimateOut, path)[1];
-        require(estimateOut2 > amounts[0]);
+        opData.klaySwapEstimateOut = klaySwapPool.estimatePos(path[1], amounts[0]);
+        opData.claimSwapEstimateOut = CLAIMSWAP.getAmountsOut(opData.klaySwapEstimateOut, path)[1];
+        require(opData.claimSwapEstimateOut > amounts[0]);
 
         _swapKlaySwap(path[1], path[0], amounts[0]);
-        _swapClaimSwap(path[0], path[1], estimateOut);
-        for (uint i = 0; i < assets.length; i++) {
+        _swapClaimSwap(path[0], path[1], opData.klaySwapEstimateOut);
+
+        opData.assetLength = assets.length;
+        for (uint i = 0; i < opData.assetLength; i++) {
             checkApprove(assets[i], address(LENDING_POOL));
         }
-        IKIP7(assets[i]).transfer(msg.sender, estimateOut2 - amounts[0] - premiums[0]);
+        IKIP7(assets[opData.assetLength]).transfer(msg.sender, opData.claimSwapEstimateOut - amounts[0] - premiums[0]);
         return true;
     }
 

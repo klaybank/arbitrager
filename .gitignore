@@ -1,4 +1,9 @@
 .idea/
-node_modules/
+cache
+abi
+artifacts
+node_modules
+dist/
+build/
 .DS_Store
 
